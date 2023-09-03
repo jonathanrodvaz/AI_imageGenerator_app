@@ -1,106 +1,110 @@
-
 const apiKey = "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";
 
 const maxImages = 4; // Number of images to generate for each prompt
 let selectedImageNumber = null;
 
-// Function to generate a random number between min and max (inclusive) 
-function getRandomNumber(min, max){
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-
+// Function to generate a random number between min and max (inclusive)
+function getRandomNumber(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-//Function to disable the generate button during processing 
-function disableGenerateButton(){
-    document.getElementById("generate").disabled = true;
+// Function to disable the generate button during processing
+function disableGenerateButton() {
+  document.getElementById("generate").disabled = true;
 }
 
-//Function to enable the generate button after process
-function enableGenerateButton(){
-    document.getElementById("generate").disabled = false;
+// Function to enable the generate button after processing
+function enableGenerateButton() {
+  document.getElementById("generate").disabled = false;
 }
 
 // Function to clear image grid
-function clearImageGrid(){
-    const imageGrid = document.getElementById("image-grid");
-    imageGrid.innerHTML = "";
-
+function clearImageGrid() {
+  const imageGrid = document.getElementById("image-grid");
+  imageGrid.innerHTML = "";
 }
 
-//Funciton to generate images
-async function generateImages(input){
-    disableGenerateButton();
-    clearImageGrid();
+// Function to animate loading dots
+function animateLoadingDots() {
+  const loading = document.getElementById("loading");
+  loading.innerHTML = "Generating";
+  loading.style.display = "block";
 
-    const loading = document.getElementById("loading");
-    loading.style.display = "block";
+  let dots = "";
+  let dotCount = 0;
+  const intervalId = setInterval(() => {
+    dots += ".";
+    loading.innerHTML = `Generating${dots}`;
+    dotCount++;
 
-    const imageUrls = [];
+    if (dotCount === 3) {
+      dots = "";
+      dotCount = 0;
+    }
+  }, 700);
 
-    for(let i = 0; i < maxImages; i++){
-        //Generate a random number between 1 and 10000 and append it to the prompt
-        const randomNumber = getRandomNumber(1, 10000);
-        const prompt = `${input} ${randomNumber}`;
-        //We added random number to prompt to create different results
-        const response = await fetch(
-            "https://api-inference.huggingface.co/models/prompthero/openjourney", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${apiKey}`, 
-                },
-                body: JSON.stringify( { inputs: prompt}),
-            }
-        );
-            if(!response.ok){
-                alert("Failed to generate image!");
-            }
+  return intervalId;
+}
 
-            const blob = await response.blob();
-            const imgUrl = URL.createObjectURL(blob);
-            imageUrls.push(imgUrl);
+// Function to generate images
+async function generateImages(input) {
+  disableGenerateButton();
+  clearImageGrid();
 
-            const img = document.createElement("img");
-            img.src = imgUrl;
-            img.alt = `picture-${i + 1}`;
-            img.onclick = () => downloadImage(imgUrl, i);
-            document.getElementById("image-grid").appendChild(img);
+  const loadingIntervalId = animateLoadingDots();
 
+  const imageUrls = [];
+
+  for (let i = 0; i < maxImages; i++) {
+    // Generate a random number between 1 and 10000 and append it to the prompt
+    const randomNumber = getRandomNumber(1, 10000);
+    const prompt = `${input} ${randomNumber}`;
+    // We added a random number to the prompt to create different results
+    const response = await fetch(
+      "https://api-inference.huggingface.co/models/prompthero/openjourney",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({ inputs: prompt }),
+      }
+    );
+    if (!response.ok) {
+      alert("Failed to generate image!");
     }
 
-    loading.style.display = "none";
-    enableGenerateButton();
+    const blob = await response.blob();
+    const imgUrl = URL.createObjectURL(blob);
+    imageUrls.push(imgUrl);
 
-    selectedImageNumber = null; // Reset selected image number
+    const img = document.createElement("img");
+    img.src = imgUrl;
+    img.alt = `picture-${i + 1}`;
+    img.onclick = () => downloadImage(imgUrl, i);
+    document.getElementById("image-grid").appendChild(img);
+  }
 
+  clearInterval(loadingIntervalId); // Stop the loading animation
+  loading.style.display = "none";
+  enableGenerateButton();
+
+  selectedImageNumber = null; // Reset selected image number
 }
 
-document.getElementById("generate").addEventListener('click', () => {
-    const input = document.getElementById("user-prompt").value;
-    generateImages(input);
+document.getElementById("generate").addEventListener("click", () => {
+  const input = document.getElementById("user-prompt").value;
+  generateImages(input);
 });
 
-function downloadImage(imgUrl, imageNumber){
-    const link = document.createElement("a");
-    link.href = imgUrl;
-    // Set filename based on the selected image
-
-    link.download = `image-${imageNumber + 1}.jpg`;
-    link.click();
+function downloadImage(imgUrl, imageNumber) {
+  const link = document.createElement("a");
+  link.href = imgUrl;
+  // Set filename based on the selected image
+  link.download = `image-${imageNumber + 1}.jpg`;
+  link.click();
 }
 
 
-const loadingMessage = document.getElementById("loading");
 
-const generateButton = document.getElementById("generate");
-
-generateButton.addEventListener("click", () => {
-  
-  loadingMessage.style.display = "block";
-
-  setTimeout(() => {
-    
-    loadingMessage.style.display = "none";
-    
-  }, 3000); 
-});
