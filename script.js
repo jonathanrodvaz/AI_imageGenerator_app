@@ -1,9 +1,3 @@
-// $(document).ready(function () {
-//     $("#title").focus();
-//     $("#text").autosize();
-//   });
-
-  
 
 const apiKey = "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";
 
@@ -94,3 +88,19 @@ function downloadImage(imgUrl, imageNumber){
     link.download = `image-${imageNumber + 1}.jpg`;
     link.click();
 }
+
+
+const loadingMessage = document.getElementById("loading");
+
+const generateButton = document.getElementById("generate");
+
+generateButton.addEventListener("click", () => {
+  
+  loadingMessage.style.display = "block";
+
+  setTimeout(() => {
+    
+    loadingMessage.style.display = "none";
+    
+  }, 3000); 
+});
